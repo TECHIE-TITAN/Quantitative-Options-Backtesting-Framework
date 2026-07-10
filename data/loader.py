@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Dict, List, Optional
 
-from utils.symbols import parse_day_folder
+from utils.symbols import OptionContract, parse_day_folder, parse_option_filename
 from utils.logging_setup import get_logger
 
 log = get_logger(__name__)
@@ -64,3 +64,39 @@ def filter_days(days: List[DayData], start: Optional[str], end: Optional[str]) -
         e = date(int(end[:4]), int(end[4:6]), int(end[6:8]))
         out = [d for d in out if d.trade_date <= e]
     return out
+
+def list_option_contracts(day: DayData, underlier: str) -> List[OptionContract]:
+    """All option contracts available for `underlier` on this trading day."""
+    contracts = []
+    if not os.path.isdir(day.options_dir):
+        return contracts
+    for fname in os.listdir(day.options_dir):
+        c = parse_option_filename(fname, os.path.join(day.options_dir, fname))
+        if c is not None and c.underlier == underlier:
+            contracts.append(c)
+    return contracts
+
+def nearest_expiry(contracts: List[OptionContract], as_of: date) -> Optional[date]:
+    """Nearest expiry that is on/after as_of. Falls back to the closest
+    available expiry overall if nothing is >= as_of (defensive, shouldn't
+    normally happen with clean data)."""
+    future_expiries = sorted({c.expiry for c in contracts if c.expiry >= as_of})
+    if future_expiries:
+        return future_expiries[0]
+    all_expiries = sorted({c.expiry for c in contracts})
+    if not all_expiries:
+        return None
+    return min(all_expiries, key=lambda e: abs((e - as_of).days))
+
+def contracts_for_nearest_expiry(day: DayData, underlier: str) -> Dict[tuple, OptionContract]:
+    """Returns {(strike, opt_type): OptionContract} restricted to the
+    nearest expiry available on this day for this underlier."""
+    all_contracts = list_option_contracts(day, underlier)
+    if not all_contracts:
+        return {}
+    expiry = nearest_expiry(all_contracts, day.trade_date)
+    return {
+        (c.strike, c.opt_type): c
+        for c in all_contracts
+        if c.expiry == expiry
+    }
