@@ -47,5 +47,25 @@ def main(argv=None):
     setup_logging(strategy_output_dir)
     log = get_logger("main")
 
+    exec_cfg = ExecutionConfig(
+        slippage_pct=args.slippage_pct,
+        brokerage_per_lot=args.brokerage_per_lot,
+        transaction_cost_pct=args.transaction_cost_pct,
+    )
+    config = BacktestConfig(
+        initial_capital=args.capital,
+        instruments=args.instruments,
+        data_root=args.data_root,
+        output_dir=strategy_output_dir,
+        lots_per_trade=args.lots_per_trade,
+        execution=exec_cfg,
+        start_date=args.start,
+        end_date=args.end,
+    )
+
+    strategy = STRATEGY_REGISTRY[args.strategy](config)
+    log.info("Starting backtest | strategy=%s | instruments=%s | capital=%.2f",
+              args.strategy, args.instruments, args.capital)
+
 if __name__ == "__main__":
     main(sys.argv[1:])
