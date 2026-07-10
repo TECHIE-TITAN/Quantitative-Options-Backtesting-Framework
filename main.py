@@ -14,6 +14,8 @@ import sys
 
 from config.config import BacktestConfig, ExecutionConfig
 
+from utils.logging_setup import setup_logging, get_logger
+
 STRATEGY_REGISTRY = {
     
 }
@@ -41,6 +43,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
 def main(argv=None):
     args = build_arg_parser().parse_args(argv)
     strategy_output_dir = _strategy_output_dir(args.output, args.strategy)
+
+    setup_logging(strategy_output_dir)
+    log = get_logger("main")
 
 if __name__ == "__main__":
     main(sys.argv[1:])
