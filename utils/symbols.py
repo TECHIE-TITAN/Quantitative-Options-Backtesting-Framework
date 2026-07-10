@@ -10,6 +10,11 @@ _OPTION_RE = re.compile(
     re.IGNORECASE,
 )
 
+_FUTURES_RE = re.compile(
+    r"^(?P<underlier>BANKNIFTY|FINNIFTY|NIFTY)-(?P<series>I{1,3})\.csv$",
+    re.IGNORECASE,
+)
+
 _DAY_FOLDER_RE = re.compile(r"^NSE_(?P<date>\d{8})$")
 
 @dataclass(frozen=True)
@@ -42,6 +47,13 @@ def parse_option_filename(filename: str, full_path: str) -> OptionContract | Non
         opt_type=m.group("opt_type").upper(),
         path=full_path,
     )
+
+def parse_futures_filename(filename: str):
+    """Returns (underlier, series) or None."""
+    m = _FUTURES_RE.match(filename)
+    if not m:
+        return None
+    return m.group("underlier").upper(), m.group("series").upper()
 
 def parse_day_folder(folder_name: str) -> date | None:
     m = _DAY_FOLDER_RE.match(folder_name)

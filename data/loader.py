@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Dict, List, Optional
 
-from utils.symbols import OptionContract, parse_day_folder, parse_option_filename
+from utils.symbols import OptionContract, parse_day_folder, parse_futures_filename, parse_option_filename
 from utils.logging_setup import get_logger
 
 log = get_logger(__name__)
@@ -87,6 +87,15 @@ def nearest_expiry(contracts: List[OptionContract], as_of: date) -> Optional[dat
     if not all_expiries:
         return None
     return min(all_expiries, key=lambda e: abs((e - as_of).days))
+
+def get_futures_path(day: DayData, underlier: str, series: str = "I") -> Optional[str]:
+    if not os.path.isdir(day.futures_dir):
+        return None
+    for fname in os.listdir(day.futures_dir):
+        parsed = parse_futures_filename(fname)
+        if parsed and parsed[0] == underlier and parsed[1] == series:
+            return os.path.join(day.futures_dir, fname)
+    return None
 
 def contracts_for_nearest_expiry(day: DayData, underlier: str) -> Dict[tuple, OptionContract]:
     """Returns {(strike, opt_type): OptionContract} restricted to the
