@@ -16,6 +16,11 @@ from config.config import BacktestConfig, ExecutionConfig
 from engine import BacktestEngine
 
 from utils.logging_setup import setup_logging, get_logger
+from analytics.reports import (
+    export_trade_log, export_portfolio_history, export_rejected_orders,
+    export_performance_summary,
+)
+from analytics.metrics import full_summary
 
 STRATEGY_REGISTRY = {
     
@@ -68,6 +73,18 @@ def main(argv=None):
     
     engine = BacktestEngine(config, strategy)
     portfolio = engine.run()
+
+    export_trade_log(portfolio.closed_positions, strategy_output_dir)
+    export_portfolio_history(portfolio, strategy_output_dir)
+    export_rejected_orders(engine.broker.rejected_orders, strategy_output_dir)
+    export_performance_summary(portfolio, config.initial_capital, strategy_output_dir)
+
+    summary = full_summary(portfolio, config.initial_capital)
+    log.info("=== PERFORMANCE SUMMARY ===")
+    for k, v in summary.items():
+        log.info("%-28s %s", k, v)
+
+    return summary
 
 if __name__ == "__main__":
     main(sys.argv[1:])
