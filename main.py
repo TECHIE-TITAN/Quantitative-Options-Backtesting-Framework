@@ -13,6 +13,7 @@ import os
 import sys
 
 from config.config import BacktestConfig, ExecutionConfig
+from engine import BacktestEngine
 
 from utils.logging_setup import setup_logging, get_logger
 
@@ -20,10 +21,8 @@ STRATEGY_REGISTRY = {
     
 }
 
-
 def _strategy_output_dir(base_output_dir: str, strategy_name: str) -> str:
     return os.path.join(base_output_dir, strategy_name)
-
 
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Event-driven options backtesting framework")
@@ -66,6 +65,9 @@ def main(argv=None):
     strategy = STRATEGY_REGISTRY[args.strategy](config)
     log.info("Starting backtest | strategy=%s | instruments=%s | capital=%.2f",
               args.strategy, args.instruments, args.capital)
+    
+    engine = BacktestEngine(config, strategy)
+    portfolio = engine.run()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
